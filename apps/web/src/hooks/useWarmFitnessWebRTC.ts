@@ -114,12 +114,22 @@ export function useWarmFitnessWebRTC() {
       });
       pcRef.current = pc;
 
+      console.info("[webrtc] iceServers from backend", iceServers);
+
       pc.addEventListener("iceconnectionstatechange", () => {
         console.log("[webrtc] iceConnectionState", pc.iceConnectionState);
       });
 
       pc.addEventListener("connectionstatechange", () => {
         console.log("[webrtc] connectionState", pc.connectionState);
+      });
+
+      pc.addEventListener("icegatheringstatechange", () => {
+        console.log("[webrtc] iceGatheringState", pc.iceGatheringState);
+      });
+
+      pc.addEventListener("signalingstatechange", () => {
+        console.log("[webrtc] signalingState", pc.signalingState);
       });
 
       const idleSource = createIdleVideoTrack();

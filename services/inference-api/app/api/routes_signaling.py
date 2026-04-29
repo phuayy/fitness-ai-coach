@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 from typing import Any
+import os
 
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from app.webrtc.ice_config import make_aiortc_configuration
@@ -18,6 +19,28 @@ from aiortc import RTCPeerConnection, RTCConfiguration, RTCIceServer
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["signaling"])
+
+def csv_env(name: str, default: str = "") -> list[str]:
+    return [value.strip() for value in os.getenv(name, default).split(",") if value.strip()]
+
+TURN_ENABLED = os.getenv("TURN_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
+
+STUN_URLS = csv_env(
+    "STUN_URLS",
+    "stun:stun.relay.metered.ca:80,stun:stun.l.google.com:19302",
+)
+
+TURN_URLS = csv_env(
+    "TURN_URLS",
+    "turn:global.relay.metered.ca:80,"
+    "turn:global.relay.metered.ca:80?transport=tcp,"
+    "turn:global.relay.metered.ca:443,"
+    "turns:global.relay.metered.ca:443?transport=tcp",
+)
+
+TURN_USERNAME = os.getenv("TURN_USERNAME", "").strip()
+TURN_CREDENTIAL = os.getenv("TURN_CREDENTIAL", "").strip()
+
 
 def build_peer_connection() -> RTCPeerConnection:
     ice_servers: list[RTCIceServer] = [
