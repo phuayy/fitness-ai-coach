@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+*.local
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Model files are large; download locally.
+services/inference-api/models/*.task
+!services/inference-api/models/README.md

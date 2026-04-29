@@ -1,0 +1,9 @@
+[project]
+name = "fitness-ai-coach-inference-api"
+version = "1.0.0"
+description = "FastAPI WebRTC inference backend for a real-time fitness coach"
+requires-python = ">=3.12,<3.13"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

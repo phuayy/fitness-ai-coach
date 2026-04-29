@@ -1,0 +1,10 @@
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
+aiortc==1.14.0
+mediapipe==0.10.35
+opencv-python==4.13.0.92
+numpy
+pydantic
+pydantic-settings
+av
+pytest
