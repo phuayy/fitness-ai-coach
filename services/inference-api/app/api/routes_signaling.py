@@ -6,16 +6,50 @@ import logging
 from typing import Any
 
 from aiortc import RTCPeerConnection, RTCSessionDescription
+from app.webrtc.ice_config import make_aiortc_configuration
 from aiortc.sdp import candidate_from_sdp
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from app.config import TURN_CREDENTIAL, TURN_ENABLED, TURN_URLS, TURN_USERNAME
 
 from app.session.session_manager import session_manager
 from app.session.workout_state import WorkoutSession
 from app.webrtc.video_processor import consume_video, make_pose_payload, send_pose_result
+from aiortc import RTCPeerConnection, RTCConfiguration, RTCIceServer
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["signaling"])
 
+def build_peer_connection() -> RTCPeerConnection:
+    ice_servers: list[RTCIceServer] = [
+        RTCIceServer(urls="stun:stun.l.google.com:19302")
+    ]
+
+    if TURN_ENABLED and TURN_URLS and TURN_USERNAME and TURN_CREDENTIAL:
+        logger.info(
+            "TURN enabled for backend peer connection with %d TURN URL(s)",
+            len(TURN_URLS),
+        )
+
+        ice_servers.append(
+            RTCIceServer(
+                urls=TURN_URLS,
+                username=TURN_USERNAME,
+                credential=TURN_CREDENTIAL,
+            )
+        )
+    else:
+        logger.warning(
+            "TURN is not fully configured for backend peer connection. "
+            "TURN_ENABLED=%s, TURN_URLS=%s, TURN_USERNAME set=%s, TURN_CREDENTIAL set=%s",
+            TURN_ENABLED,
+            bool(TURN_URLS),
+            bool(TURN_USERNAME),
+            bool(TURN_CREDENTIAL),
+        )
+
+    return RTCPeerConnection(
+        configuration=RTCConfiguration(iceServers=ice_servers)
+    )
 
 @router.websocket("/ws/webrtc/{session_id}")
 async def webrtc_signaling(websocket: WebSocket, session_id: str) -> None:
@@ -98,15 +132,46 @@ async def handle_offer(session: WorkoutSession, message: dict[str, Any], pending
     if not isinstance(sdp, str):
         await send_error(session, "Offer SDP is missing")
         return
-
-    pc = RTCPeerConnection()
+    
+    pc = build_peer_connection()
     session.pc = pc
+
+    @pc.on("icecandidate")
+    async def on_icecandidate(candidate) -> None:
+        if candidate is None:
+            return
+
+        await session.websocket.send_text(json.dumps({
+            "type": "candidate",
+            "candidate": {
+                "candidate": candidate.to_sdp(),
+                "sdpMid": candidate.sdpMid,
+                "sdpMLineIndex": candidate.sdpMLineIndex,
+            },
+        }))
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange() -> None:
         logger.info("Session %s WebRTC state: %s", session.session_id, pc.connectionState)
         if pc.connectionState in {"failed", "closed", "disconnected"}:
             session.closed = True
+
+    @pc.on("iceconnectionstatechange")
+    async def on_iceconnectionstatechange() -> None:
+        logger.info(
+            "Session %s ICE state: %s",
+            session.session_id,
+            pc.iceConnectionState,
+        )
+
+
+    @pc.on("icegatheringstatechange")
+    async def on_icegatheringstatechange() -> None:
+        logger.info(
+            "Session %s ICE gathering state: %s",
+            session.session_id,
+            pc.iceGatheringState,
+        )
 
     @pc.on("track")
     def on_track(track) -> None:
@@ -124,7 +189,15 @@ async def handle_offer(session: WorkoutSession, message: dict[str, Any], pending
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
 
-    await session.websocket.send_text(json.dumps({"type": "answer", "sdp": pc.localDescription.sdp}))
+    logger.info(
+        "Local SDP for session %s:\n%s",
+        session.session_id,
+        pc.localDescription.sdp,
+    )
+
+    await session.websocket.send_text(
+        json.dumps({"type": "answer", "sdp": pc.localDescription.sdp})
+    )
 
     # Warm MediaPipe after signaling starts. This moves model-loading cost away from the Camera On click.
     asyncio.create_task(_warm_pose_model(session))

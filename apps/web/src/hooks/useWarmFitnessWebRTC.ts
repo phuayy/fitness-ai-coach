@@ -114,13 +114,30 @@ export function useWarmFitnessWebRTC() {
       });
       pcRef.current = pc;
 
+      pc.addEventListener("iceconnectionstatechange", () => {
+        console.log("[webrtc] iceConnectionState", pc.iceConnectionState);
+      });
+
+      pc.addEventListener("connectionstatechange", () => {
+        console.log("[webrtc] connectionState", pc.connectionState);
+      });
+
       const idleSource = createIdleVideoTrack();
       idleSourceRef.current = idleSource;
       videoSenderRef.current = pc.addTrack(idleSource.track, idleSource.stream);
 
       pc.onicecandidate = (event) => {
+        console.log(
+          "[webrtc] local ICE candidate",
+          event.candidate?.candidate ?? "end-of-candidates"
+        );
+
         if (!event.candidate) return;
-        sendJson({ type: "candidate", candidate: event.candidate.toJSON() });
+
+        sendJson({
+          type: "candidate",
+          candidate: event.candidate.toJSON(),
+        });
       };
 
       pc.onconnectionstatechange = () => {

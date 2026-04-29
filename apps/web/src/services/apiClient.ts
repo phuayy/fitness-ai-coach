@@ -1,5 +1,5 @@
-const API_HTTP_URL = import.meta.env.VITE_API_HTTP_URL ?? import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
-export const API_WS_URL = import.meta.env.VITE_API_WS_URL ?? "ws://127.0.0.1:8000";
+const API_HTTP_URL = import.meta.env.VITE_API_HTTP_URL ?? import.meta.env.VITE_API_BASE_URL ?? "https://fitness-ai-coach-theta.vercel.app";
+export const API_WS_URL = import.meta.env.VITE_API_WS_URL ?? "ws://fitness-ai-coach-theta.vercel.app";
 
 export type IceServersResponse = {
   enabled: boolean;

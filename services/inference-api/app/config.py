@@ -7,6 +7,9 @@ MODEL_DIR = ROOT_DIR / "models"
 APP_ENV = os.getenv("APP_ENV", "development")
 APP_VERSION = os.getenv("APP_VERSION", "1.1.0")
 
+def _split_csv(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
 POSE_MODEL_PATH = Path(os.getenv("POSE_MODEL_PATH", str(MODEL_DIR / "pose_landmarker_full.task")))
 if not POSE_MODEL_PATH.is_absolute():
     POSE_MODEL_PATH = ROOT_DIR / POSE_MODEL_PATH
@@ -26,7 +29,13 @@ CORS_ORIGIN_REGEX = os.getenv("CORS_ALLOWED_ORIGIN_REGEX", "").strip() or None
 MIN_LANDMARK_VISIBILITY = float(os.getenv("MIN_LANDMARK_VISIBILITY", "0.15"))
 
 TURN_ENABLED = os.getenv("TURN_ENABLED", "false").lower() == "true"
-TURN_REALM = os.getenv("TURN_REALM", "fitness-ai-coach")
-TURN_SECRET = os.getenv("TURN_SECRET", "")
-TURN_URL = os.getenv("TURN_URL", "")
+
+# Metered dashboard/static credential setup
+TURN_URLS = _split_csv(os.getenv("TURN_URLS", os.getenv("TURN_URL", "")))
+TURN_USERNAME = os.getenv("TURN_USERNAME", "")
+TURN_CREDENTIAL = os.getenv("TURN_CREDENTIAL", "")
+
+# Keep these optional for future expiring/shared-secret setups
+# TURN_SECRET = os.getenv("TURN_SECRET", "")
+# TURN_REALM = os.getenv("TURN_REALM", "")
 TURN_TTL_SECONDS = int(os.getenv("TURN_TTL_SECONDS", "3600"))

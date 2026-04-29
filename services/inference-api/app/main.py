@@ -33,39 +33,6 @@ def root():
         "status": "running",
     }
 
-@app.get("/health")
-def health():
-    checks = {
-        "api": "ok",
-        "libGLESv2": "unknown",
-        "libEGL": "unknown",
-        "mediapipe": "unknown",
-    }
-
-    try:
-        ctypes.CDLL("libGLESv2.so.2")
-        checks["libGLESv2"] = "ok"
-    except Exception as exc:
-        checks["libGLESv2"] = f"failed: {exc}"
-
-    try:
-        ctypes.CDLL("libEGL.so.1")
-        checks["libEGL"] = "ok"
-    except Exception as exc:
-        checks["libEGL"] = f"failed: {exc}"
-
-    try:
-        import mediapipe as mp
-        checks["mediapipe"] = "ok"
-    except Exception as exc:
-        checks["mediapipe"] = f"failed: {exc}"
-
-    overall_ok = all(value == "ok" for key, value in checks.items() if key != "api")
-
-    return {
-        "status": "ok" if overall_ok else "degraded",
-        "checks": checks,
-    }
 
 @app.on_event("shutdown")
 async def on_shutdown() -> None:
