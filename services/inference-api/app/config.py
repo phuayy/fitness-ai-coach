@@ -20,6 +20,8 @@ SESSION_IDLE_TIMEOUT_SECONDS = int(os.getenv("SESSION_IDLE_TIMEOUT_SECONDS", "30
 _raw_origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://127.0.0.1:5173,http://localhost:5173")
 CORS_ORIGINS = [origin.strip() for origin in _raw_origins.split(",") if origin.strip()]
 
+CORS_ORIGIN_REGEX = os.getenv("CORS_ALLOWED_ORIGIN_REGEX", "").strip() or None
+
 # More forgiving defaults for a first webcam MVP. Tighten after calibration.
 MIN_LANDMARK_VISIBILITY = float(os.getenv("MIN_LANDMARK_VISIBILITY", "0.15"))
 
